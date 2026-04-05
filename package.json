@@ -1,0 +1,8 @@
+{
+  "name": "noc-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
