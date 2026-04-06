@@ -51,8 +51,6 @@ export default function MainLayout() {
         <div className="flex items-center gap-8">
           <div className="text-xl font-bold tracking-tight text-primary">NOC Report</div>
           <div className="hidden md:flex items-center gap-6">
-            <a className="text-on-surface/70 hover:text-on-surface transition-colors duration-200" href="#">Network Map</a>
-            <a className="text-on-surface/70 hover:text-on-surface transition-colors duration-200" href="#">Alerts</a>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -64,10 +62,10 @@ export default function MainLayout() {
               type="text"
             />
           </div>
-          <button onClick={toggleTheme} className="p-2 text-primary hover:bg-surface-variant transition-all rounded-full" title="Toggle Theme">
+          <button onClick={toggleTheme} className="p-2 text-primary hover:bg-surface-variant transition-all rounded-full" aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'} title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
             <span className="material-symbols-outlined">{isDarkMode ? 'light_mode' : 'dark_mode'}</span>
           </button>
-          <button className="p-2 text-primary hover:bg-surface-variant transition-all rounded-full">
+          <button className="p-2 text-primary hover:bg-surface-variant transition-all rounded-full" aria-label="Notifications" title="Notifications">
             <span className="material-symbols-outlined">notifications</span>
           </button>
           <div className="flex items-center gap-3 pl-4 border-l border-outline-variant/15">
@@ -107,11 +105,11 @@ export default function MainLayout() {
             <span className="font-inter text-xs uppercase tracking-[0.05em] font-medium">History</span>
           </Link>
         </nav>
-        <div className="px-4 mt-auto">
-          <a className="flex items-center gap-3 text-on-surface/50 px-4 py-3 hover:bg-surface-container-high hover:text-on-surface transition-all group" href="#">
-            <span className="material-symbols-outlined opacity-100 group-hover:translate-x-1 duration-300">settings</span>
+        <div className="px-4 mt-auto opacity-50 cursor-not-allowed">
+          <div className="flex items-center gap-3 text-on-surface/50 px-4 py-3" aria-disabled="true">
+            <span className="material-symbols-outlined">settings</span>
             <span className="font-inter text-xs uppercase tracking-[0.05em] font-medium">Settings</span>
-          </a>
+          </div>
         </div>
       </aside>
 

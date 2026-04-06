@@ -7,9 +7,17 @@ export default function History() {
   const [page, setPage] = useState(1);
   const limit = 10;
 
+  useEffect(() => { document.title = 'History — NOC Report'; }, []);
+
   // Quick summary stats
   const [totalStats, setTotalStats] = useState({ total: 0, maintenance: 0, critical: 0, avgResolv: 0 });
   const [isExporting, setIsExporting] = useState(false);
+  const [toast, setToast] = useState('');
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +53,7 @@ export default function History() {
   const handleCopy = async (report: PaginatedReports['data'][0]) => {
     if (report.whatsappSummary) {
       await navigator.clipboard.writeText(report.whatsappSummary);
-      alert('WhatsApp summary copied to clipboard!');
+      showToast('✅ WhatsApp summary copied to clipboard!');
     }
   };
 
@@ -78,7 +86,7 @@ export default function History() {
       document.body.removeChild(link);
     } catch (err) {
       console.error(err);
-      alert("Failed to export data");
+      showToast('❌ Failed to export data');
     } finally {
       setIsExporting(false);
     }
@@ -104,7 +112,7 @@ export default function History() {
 
       const sortedMonths = Object.keys(months).sort().reverse();
       if (sortedMonths.length === 0) {
-        alert("No data available to summarize");
+        showToast('⚠️ No data available to summarize');
         return;
       }
 
@@ -128,10 +136,10 @@ export default function History() {
       ].join("\n");
 
       await navigator.clipboard.writeText(summaryText);
-      alert(`Monthly summary for ${monthName} copied to clipboard!`);
+      showToast(`✅ Monthly summary for ${monthName} copied!`);
     } catch (err) {
       console.error(err);
-      alert("Failed to generate summary");
+      showToast('❌ Failed to generate summary');
     } finally {
       setIsExporting(false);
     }
@@ -142,6 +150,17 @@ export default function History() {
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto flex flex-col h-full space-y-6">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-[fadeInUp_0.3s_ease-out]">
+          <div className="bg-surface-container-highest text-on-surface px-6 py-3 rounded-xl shadow-2xl border border-outline-variant/20 text-sm font-medium flex items-center gap-3">
+            <span>{toast}</span>
+            <button onClick={() => setToast('')} className="text-outline hover:text-on-surface ml-2" aria-label="Dismiss notification">
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          </div>
+        </div>
+      )}
       {/* Page Header & Filters */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>

@@ -105,6 +105,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  useEffect(() => { document.title = 'Dashboard — NOC Report'; }, []);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);

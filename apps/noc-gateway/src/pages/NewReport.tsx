@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from '../lib/auth-client';
 import { reportApi } from '../lib/api';
 
 export default function NewReport() {
   const { data: sessionData } = useSession();
   const adminName = sessionData?.user?.name || 'Unknown Operator';
+
+  useEffect(() => { document.title = 'New Report — NOC Report'; }, []);
 
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
