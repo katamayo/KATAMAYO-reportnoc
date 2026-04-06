@@ -12,7 +12,7 @@ router.use(requireAuth);
 
 const createReportSchema = z.object({
   reportDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
-  shift: z.number().int().min(1).max(3),
+  shift: z.number().int().min(0).max(3),
   troubleshooting: z.number().int().min(0),
   aktivasi: z.number().int().min(0),
   replacementOnu: z.number().int().min(0),

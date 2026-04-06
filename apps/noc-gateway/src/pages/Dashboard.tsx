@@ -1,12 +1,24 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { reportApi, type ReportStats } from '../lib/api';
+import { reportApi, type ReportStats, type Report } from '../lib/api';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
+    const shiftsStr = payload[0].payload.shifts || '';
+    const shifts = shiftsStr.split(',').filter(Boolean).map((s: string) => s.trim());
+
     return (
-      <div className="bg-surface-container-high/90 backdrop-blur-md p-4 rounded-xl border border-outline-variant/20 shadow-2xl z-50">
-        <p className="text-on-surface font-extrabold text-[10px] uppercase tracking-widest mb-3 border-b border-outline-variant/20 pb-2">{`DATE : ${label}`}</p>
+      <div className="bg-surface-container-high/90 backdrop-blur-md p-4 rounded-xl border border-outline-variant/20 shadow-2xl z-50 min-w-[180px]">
+        <div className="flex items-center justify-between gap-4 mb-3 border-b border-outline-variant/20 pb-2">
+          <p className="text-on-surface font-extrabold text-[10px] uppercase tracking-widest">{`DATE : ${label}`}</p>
+          <div className="flex gap-1">
+            {shifts.map((s: string) => (
+              <span key={s} className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter shadow-sm ${s === '0' ? 'bg-error text-on-error' : 'bg-primary text-on-primary'}`}>
+                {s === '0' ? 'OFF' : `Shift ${s}`}
+              </span>
+            ))}
+          </div>
+        </div>
         <div className="space-y-2">
           {payload.map((entry: any, index: number) => (
             <div key={`item-${index}`} className="flex items-center justify-between gap-6">
@@ -45,7 +57,7 @@ const MetricChart = ({ dataKey, color, title, monthData }: { dataKey: string, co
           <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface truncate">{title}</h3>
         </div>
         <div className="flex bg-surface-container-low rounded-lg p-1.5 px-3 border border-outline-variant/10 shrink-0">
-          <select 
+          <select
             value={selectedWeek}
             onChange={(e) => setSelectedWeek(e.target.value)}
             className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-on-surface outline-none cursor-pointer"
@@ -89,6 +101,7 @@ export default function Dashboard() {
   const availableMonths = getAvailableMonths();
   const [selectedMonth, setSelectedMonth] = useState(availableMonths[0].value);
   const [stats, setStats] = useState<ReportStats | null>(null);
+  const [latestReports, setLatestReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -97,9 +110,15 @@ export default function Dashboard() {
     setLoading(true);
     setError('');
 
-    reportApi.getStats(selectedMonth)
-      .then((data) => {
-        if (!cancelled) setStats(data);
+    Promise.all([
+      reportApi.getStats(selectedMonth),
+      reportApi.list({ limit: 10 })
+    ])
+      .then(([statsData, reportsData]) => {
+        if (!cancelled) {
+          setStats(statsData);
+          setLatestReports(reportsData.data);
+        }
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || 'Failed to load stats');
@@ -114,6 +133,7 @@ export default function Dashboard() {
   // Transform API data to chart format
   const chartData = stats?.dailyBreakdown.map((day) => ({
     name: String(new Date(day.date).getDate()),
+    shifts: day.shifts,
     Aktivasi: day.aktivasi,
     Troubleshooting: day.troubleshooting,
     'Replacement ONU': day.replacementOnu,
@@ -126,8 +146,6 @@ export default function Dashboard() {
   const totalCheck = stats?.totals.checkOnu || 0;
   const totalMonthlyReports = totalAktivasi + totalTb + totalRepl + totalCheck;
   const avgDailyReports = stats?.avgDailyReports || 0;
-
-  // Find the label for the currently selected month
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 pb-10">
@@ -167,7 +185,7 @@ export default function Dashboard() {
           <div className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-[10px] font-bold text-outline uppercase tracking-widest">Report Volumes Summary</h3>
-              <select 
+              <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 className="bg-surface-container-lowest border border-outline-variant/20 rounded-lg text-[10px] font-bold uppercase tracking-wider text-on-surface-variant px-3 py-2 outline-none focus:border-primary shadow-sm cursor-pointer transition-all"
@@ -177,38 +195,38 @@ export default function Dashboard() {
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
               <div className="bg-surface-container-lowest p-4 rounded-lg flex flex-col justify-between border-l-4 border-outline-variant shadow-md dark:shadow-black/50">
                 <span className="text-[9px] font-bold uppercase tracking-widest text-outline">Avg Daily Reports</span>
-                <span className="text-xl font-extrabold text-on-surface mt-1">{avgDailyReports}</span>
+                <span className="text-4xl font-extrabold text-on-surface mt-1">{avgDailyReports}</span>
               </div>
               <div className="bg-surface-container-lowest p-4 rounded-lg flex flex-col justify-between border-l-4 border-outline shadow-md dark:shadow-black/50">
                 <span className="text-[9px] font-bold uppercase tracking-widest text-outline">Monthly Reports</span>
-                <span className="text-xl font-extrabold text-on-surface mt-1">{totalMonthlyReports.toLocaleString()}</span>
+                <span className="text-4xl font-extrabold text-on-surface mt-1">{totalMonthlyReports.toLocaleString()}</span>
               </div>
-              <div className="bg-surface-container-lowest p-4 rounded-lg flex flex-col justify-between border border-outline-variant/10 shadow-md dark:shadow-black/50">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-outline flex items-center gap-2">
+              <div className="bg-surface-container-lowest p-4 rounded-lg flex flex-col items-center justify-center border border-outline-variant/10 shadow-md dark:shadow-black/50 text-center">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-outline flex items-center gap-2 mb-1">
                   <span className="w-2 h-2 rounded-full bg-primary shadow-sm"></span> Aktivasi
                 </span>
-                <span className="text-lg font-extrabold text-primary mt-1">{totalAktivasi.toLocaleString()}</span>
+                <span className="text-4xl font-extrabold text-primary">{totalAktivasi.toLocaleString()}</span>
               </div>
-              <div className="bg-surface-container-lowest p-4 rounded-lg flex flex-col justify-between border border-outline-variant/10 shadow-md dark:shadow-black/50">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-outline flex items-center gap-2">
+              <div className="bg-surface-container-lowest p-4 rounded-lg flex flex-col items-center justify-center border border-outline-variant/10 shadow-md dark:shadow-black/50 text-center">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-outline flex items-center gap-2 mb-1">
                   <span className="w-2 h-2 rounded-full bg-tertiary shadow-sm"></span> Troubleshoot
                 </span>
-                <span className="text-lg font-extrabold text-tertiary mt-1">{totalTb.toLocaleString()}</span>
+                <span className="text-4xl font-extrabold text-tertiary">{totalTb.toLocaleString()}</span>
               </div>
-              <div className="bg-surface-container-lowest p-4 rounded-lg flex flex-col justify-between border border-outline-variant/10 shadow-md dark:shadow-black/50">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-outline flex items-center gap-2">
+              <div className="bg-surface-container-lowest p-4 rounded-lg flex flex-col items-center justify-center border border-outline-variant/10 shadow-md dark:shadow-black/50 text-center">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-outline flex items-center gap-2 mb-1">
                   <span className="w-2 h-2 rounded-full bg-error shadow-sm"></span> Replace ONU
                 </span>
-                <span className="text-lg font-extrabold text-error mt-1">{totalRepl.toLocaleString()}</span>
+                <span className="text-4xl font-extrabold text-error">{totalRepl.toLocaleString()}</span>
               </div>
-              <div className="bg-surface-container-lowest p-4 rounded-lg flex flex-col justify-between border border-outline-variant/10 shadow-md dark:shadow-black/50">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-outline flex items-center gap-2">
+              <div className="bg-surface-container-lowest p-4 rounded-lg flex flex-col items-center justify-center border border-outline-variant/10 shadow-md dark:shadow-black/50 text-center">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-outline flex items-center gap-2 mb-1">
                   <span className="w-2 h-2 rounded-full bg-yellow-500 shadow-sm"></span> Check ONU
                 </span>
-                <span className="text-lg font-extrabold text-yellow-500 mt-1">{totalCheck.toLocaleString()}</span>
+                <span className="text-4xl font-extrabold text-yellow-500">{totalCheck.toLocaleString()}</span>
               </div>
             </div>
           </div>
@@ -266,13 +284,54 @@ export default function Dashboard() {
 
           {/* Individual Variable Charts */}
           {chartData.length > 0 && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <MetricChart monthData={chartData} dataKey="Aktivasi" color="var(--primary)" title="Aktivasi Perangkat" />
               <MetricChart monthData={chartData} dataKey="Troubleshooting" color="var(--tertiary)" title="Troubleshooting" />
               <MetricChart monthData={chartData} dataKey="Replacement ONU" color="var(--error)" title="Replacement ONU" />
               <MetricChart monthData={chartData} dataKey="Check ONU" color="#eab308" title="Check ONU" />
             </div>
           )}
+
+          {/* Operator Activity Log / Notes Section */}
+          <div className="bg-surface-container-high p-6 rounded-xl border border-outline-variant/10 shadow-sm">
+            <div className="flex items-center gap-2 mb-6">
+              <span className="material-symbols-outlined text-primary text-sm">history_edu</span>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-outline">Operator Activity Log</h3>
+            </div>
+
+            <div className="space-y-4">
+              {latestReports.length > 0 ? (
+                latestReports.filter(r => r.notes || r.shift === 0).slice(0, 5).map((report) => (
+                  <div key={report.id} className="flex gap-4 p-4 bg-surface-container-lowest rounded-lg border border-outline-variant/5 hover:border-outline-variant/20 transition-all group">
+                    <div className="flex-shrink-0 flex flex-col items-center justify-start pt-1">
+                      <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-[10px] font-bold text-primary mb-1">
+                        {(report.operatorName || 'U').substring(0, 2).toUpperCase()}
+                      </div>
+                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter ${report.shift === 0 ? 'bg-error/10 text-error' : 'bg-surface-container-high text-outline'}`}>
+                        {report.shift === 0 ? 'OFF' : `S${report.shift}`}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-on-surface">{report.operatorName || 'Unknown Operator'}</span>
+                        <span className="text-[10px] text-outline">{new Date(report.reportDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      </div>
+                      <p className="text-sm text-on-surface-variant line-clamp-2 italic">
+                        {report.notes || (report.shift === 0 ? 'Day Off / Libur' : 'No notes provided.')}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-outline text-xs italic">No recent activity notes available.</div>
+              )}
+            </div>
+            <div className="mt-4 pt-4 border-t border-outline-variant/10 text-right">
+              <a href="/history" className="text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center justify-end gap-1">
+                View Full History <span className="material-symbols-outlined text-xs">arrow_forward</span>
+              </a>
+            </div>
+          </div>
         </>
       )}
     </div>

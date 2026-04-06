@@ -22,23 +22,36 @@ export function generateWhatsAppSummary(data: ReportData): string {
   });
 
   const shiftLabels: Record<number, string> = {
+    0: "DAY OFF (Libur)",
     1: "Shift 1 (Pagi)",
     2: "Shift 2 (Siang)",
     3: "Shift 3 (Malam)",
   };
 
+  const isDayOff = data.shift === 0;
+
   const lines = [
-    `📊 *NOC Daily Report*`,
+    `📊 *NOC ${isDayOff ? 'Day Off Status' : 'Daily Report'}*`,
     `📅 ${formattedDate} | ${shiftLabels[data.shift] || `Shift ${data.shift}`}`,
     `👤 Operator: ${data.operatorName}`,
     ``,
-    `── Metrics ──`,
-    `🔧 Troubleshooting : ${data.troubleshooting}`,
-    `✅ Aktivasi        : ${data.aktivasi}`,
-    `🔄 Replacement ONU : ${data.replacementOnu}`,
-    `🔍 Check ONU       : ${data.checkOnu}`,
-    `📦 Total           : ${data.troubleshooting + data.aktivasi + data.replacementOnu + data.checkOnu}`,
   ];
+
+  if (!isDayOff) {
+    lines.push(
+      `── Metrics ──`,
+      `🔧 Troubleshooting : ${data.troubleshooting}`,
+      `✅ Aktivasi        : ${data.aktivasi}`,
+      `🔄 Replacement ONU : ${data.replacementOnu}`,
+      `🔍 Check ONU       : ${data.checkOnu}`,
+      `📦 Total           : ${data.troubleshooting + data.aktivasi + data.replacementOnu + data.checkOnu}`
+    );
+  } else {
+    lines.push(`📴 *Status: DAY OFF*`);
+    if (data.notes) {
+      lines.push(`📝 Info: ${data.notes.trim()}`);
+    }
+  }
 
   if (data.notes?.trim()) {
     lines.push(``, `📝 Notes: ${data.notes.trim()}`);

@@ -127,8 +127,8 @@ export default function NewReport() {
             </div>
             <div className="space-y-2">
               <label className="block text-[10px] text-outline uppercase font-bold mb-1.5">Active Shift</label>
-              <div className="grid grid-cols-3 gap-2 bg-surface-container-lowest p-1 rounded-lg border border-outline-variant/10">
-                {[1, 2, 3].map((s) => (
+              <div className="grid grid-cols-4 gap-2 bg-surface-container-lowest p-1 rounded-lg border border-outline-variant/10">
+                {[1, 2, 3, 0].map((s) => (
                   <label key={s} className="relative flex items-center justify-center">
                     <input 
                       checked={shift === s} 
@@ -136,10 +136,19 @@ export default function NewReport() {
                       name="shift" 
                       type="radio" 
                       value={s} 
-                      onChange={() => setShift(s)} 
+                      onChange={() => {
+                        setShift(s);
+                        if (s === 0) {
+                          setTroubleshooting('0');
+                          setAktivasi('0');
+                          setReplacementOnu('0');
+                          setCheckOnu('0');
+                          if (!notes) setNotes('Libur');
+                        }
+                      }} 
                     />
                     <span className="w-full text-center py-2 text-[10px] font-bold uppercase tracking-wider rounded-md cursor-pointer transition-all text-outline hover:text-on-surface peer-checked:bg-primary/20 peer-checked:text-primary">
-                      Shift {s}
+                      {s === 0 ? 'Libur' : `Shift ${s}`}
                     </span>
                   </label>
                 ))}
@@ -182,11 +191,12 @@ export default function NewReport() {
               </label>
               <div className="relative group">
                 <input 
-                  className="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:border-primary/50 focus:ring-primary/40 rounded-lg py-3 px-4 text-sm transition-all" 
+                  className="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:border-primary/50 focus:ring-primary/40 rounded-lg py-3 px-4 text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed" 
                   placeholder="0" 
                   type="text" 
                   inputMode="numeric"
                   value={troubleshooting}
+                  disabled={shift === 0}
                   onChange={(e) => setTroubleshooting(e.target.value.replace(/\D/g, ''))}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -206,11 +216,12 @@ export default function NewReport() {
               </label>
               <div className="relative group">
                 <input 
-                  className="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:border-primary/50 focus:ring-primary/40 rounded-lg py-3 px-4 text-sm transition-all" 
+                  className="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:border-primary/50 focus:ring-primary/40 rounded-lg py-3 px-4 text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed" 
                   placeholder="0" 
                   type="text" 
                   inputMode="numeric"
                   value={aktivasi}
+                  disabled={shift === 0}
                   onChange={(e) => setAktivasi(e.target.value.replace(/\D/g, ''))}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -230,11 +241,12 @@ export default function NewReport() {
               </label>
               <div className="relative group">
                 <input 
-                  className="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:border-primary/50 focus:ring-primary/40 rounded-lg py-3 px-4 text-sm transition-all" 
+                  className="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:border-primary/50 focus:ring-primary/40 rounded-lg py-3 px-4 text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed" 
                   placeholder="0" 
                   type="text" 
                   inputMode="numeric"
                   value={replacementOnu}
+                  disabled={shift === 0}
                   onChange={(e) => setReplacementOnu(e.target.value.replace(/\D/g, ''))}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -254,11 +266,12 @@ export default function NewReport() {
               </label>
               <div className="relative group">
                 <input 
-                  className="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:border-primary/50 focus:ring-primary/40 rounded-lg py-3 px-4 text-sm transition-all" 
+                  className="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:border-primary/50 focus:ring-primary/40 rounded-lg py-3 px-4 text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed" 
                   placeholder="0" 
                   type="text" 
                   inputMode="numeric"
                   value={checkOnu}
+                  disabled={shift === 0}
                   onChange={(e) => setCheckOnu(e.target.value.replace(/\D/g, ''))}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">

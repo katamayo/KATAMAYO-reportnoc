@@ -242,6 +242,7 @@ export async function getReportStats(query: StatsQuery) {
   const dailyBreakdown = await db
     .select({
       date: dailyReport.reportDate,
+      shifts: sql<string>`STRING_AGG(DISTINCT ${dailyReport.shift}::text, ',')`,
       troubleshooting: sql<number>`COALESCE(SUM(${dailyReport.troubleshooting}), 0)::int`,
       aktivasi: sql<number>`COALESCE(SUM(${dailyReport.aktivasi}), 0)::int`,
       replacementOnu: sql<number>`COALESCE(SUM(${dailyReport.replacementOnu}), 0)::int`,

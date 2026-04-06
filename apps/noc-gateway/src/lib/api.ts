@@ -79,6 +79,7 @@ export interface ReportStats {
   };
   dailyBreakdown: {
     date: string;
+    shifts: string;
     troubleshooting: number;
     aktivasi: number;
     replacementOnu: number;

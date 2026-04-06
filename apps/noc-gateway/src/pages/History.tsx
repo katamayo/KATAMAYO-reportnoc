@@ -9,6 +9,7 @@ export default function History() {
 
   // Quick summary stats
   const [totalStats, setTotalStats] = useState({ total: 0, maintenance: 0, critical: 0, avgResolv: 0 });
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,6 +49,94 @@ export default function History() {
     }
   };
 
+  const handleExportAll = async () => {
+    try {
+      setIsExporting(true);
+      const allData = await reportApi.list({ limit: 1000 });
+      const reports = allData.data;
+
+      const headers = ["Date", "Operator", "Shift", "Activation", "Troubleshoot", "Replace ONU", "Check ONU", "Notes"];
+      const rows = reports.map(r => [
+        r.reportDate,
+        `"${r.operatorName || 'Unknown'}"`,
+        r.shift === 0 ? "DAY OFF" : `Shift ${r.shift}`,
+        r.aktivasi,
+        r.troubleshooting,
+        r.replacementOnu,
+        r.checkOnu,
+        `"${(r.notes || '').replace(/"/g, '""')}"`
+      ]);
+
+      const csvContent = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `NOC_History_Export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export data");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleCopyMonthlySummary = async () => {
+    try {
+      setIsExporting(true);
+      const allData = await reportApi.list({ limit: 1000 });
+      const reports = allData.data;
+
+      // Grouping by Month (YYYY-MM)
+      const months: Record<string, { aktivasi: number, troubleshooting: number, replacementOnu: number, checkOnu: number }> = {};
+      
+      reports.forEach(r => {
+        const m = r.reportDate.substring(0, 7); // YYYY-MM
+        if (!months[m]) months[m] = { aktivasi: 0, troubleshooting: 0, replacementOnu: 0, checkOnu: 0 };
+        months[m].aktivasi += r.aktivasi;
+        months[m].troubleshooting += r.troubleshooting;
+        months[m].replacementOnu += r.replacementOnu;
+        months[m].checkOnu += r.checkOnu;
+      });
+
+      const sortedMonths = Object.keys(months).sort().reverse();
+      if (sortedMonths.length === 0) {
+        alert("No data available to summarize");
+        return;
+      }
+
+      const latestMonth = sortedMonths[0]; // Take the latest month in history
+      const stats = months[latestMonth];
+      const total = stats.aktivasi + stats.troubleshooting + stats.replacementOnu + stats.checkOnu;
+      
+      const [year, monthIdx] = latestMonth.split("-");
+      const monthName = new Date(Number(year), Number(monthIdx) - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+      const summaryText = [
+        `📊 *NOC Monthly Summary - ${monthName.toUpperCase()}*`,
+        `─────────────────────`,
+        `✅ Aktivasi        : ${stats.aktivasi}`,
+        `🔧 Troubleshooting : ${stats.troubleshooting}`,
+        `🔄 Replacement ONU : ${stats.replacementOnu}`,
+        `🔍 Check ONU       : ${stats.checkOnu}`,
+        `📦 Total Metrics   : ${total}`,
+        `─────────────────────`,
+        `_NOC Sentinel Monitoring System_`
+      ].join("\n");
+
+      await navigator.clipboard.writeText(summaryText);
+      alert(`Monthly summary for ${monthName} copied to clipboard!`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to generate summary");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const reports = data?.data || [];
   const pagination = data?.pagination;
 
@@ -60,9 +149,21 @@ export default function History() {
           <p className="text-on-surface-variant text-sm mt-1">Audit log of system-wide NOC observational metrics.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 bg-surface-container-low p-2 rounded-xl border border-outline-variant/10">
-          <button className="bg-gradient-to-br from-primary to-primary-container text-on-primary-container px-4 py-2 rounded-lg text-xs font-extrabold uppercase tracking-widest transition-all shadow-lg shadow-primary/10 flex items-center gap-2">
-            <span className="material-symbols-outlined text-sm">download</span>
-            Export All
+          <button 
+            onClick={handleCopyMonthlySummary}
+            disabled={isExporting}
+            className="bg-surface-container-highest text-primary hover:bg-primary hover:text-on-primary px-4 py-2 rounded-lg text-xs font-extrabold uppercase tracking-widest transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-sm">content_copy</span>
+            Monthly Summary
+          </button>
+          <button 
+            onClick={handleExportAll}
+            disabled={isExporting}
+            className="bg-gradient-to-br from-primary to-primary-container text-on-primary-container px-4 py-2 rounded-lg text-xs font-extrabold uppercase tracking-widest transition-all shadow-lg shadow-primary/10 flex items-center gap-2 disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-sm">{isExporting ? 'progress_activity' : 'download'}</span>
+            {isExporting ? 'Exporting...' : 'Export All'}
           </button>
         </div>
       </div>
@@ -171,7 +272,9 @@ export default function History() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className="bg-surface-container-highest text-on-surface px-2 py-1 rounded text-xs font-bold">S{item.shift}</span>
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${item.shift === 0 ? 'bg-error/10 text-error border border-error/20' : 'bg-surface-container-highest text-on-surface'}`}>
+                          {item.shift === 0 ? 'OFF' : `S${item.shift}`}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span className="bg-surface-container-highest text-primary px-2 py-1 rounded text-xs font-bold">{item.aktivasi}</span>
